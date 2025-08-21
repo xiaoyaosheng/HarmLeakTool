@@ -39,7 +39,7 @@ struct MemoryLeakDemo {
   @State private operationMessage: string = '';
 
   // 页面状态
-  @State private pageTitle: string = 'ArkTS 内存泄露演示';
+  @State private pageTitle: string = '鸿蒙内存泄露模拟';
   @State private showInstructions: boolean = true;
 
   /**
