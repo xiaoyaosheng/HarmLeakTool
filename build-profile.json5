@@ -1,0 +1,56 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\wangt\\.ohos\\config\\default_memLeak_t2NOPmrVJfjrD_bTNSem_CzX3_bFBgj15d6HR5TgdOs=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B56FD19995A9D9388B97A9182325278CBCA5EAB85A7B9FD4C6408BFCA48928FD21A8332657017C7",
+          "profile": "C:\\Users\\wangt\\.ohos\\config\\default_memLeak_t2NOPmrVJfjrD_bTNSem_CzX3_bFBgj15d6HR5TgdOs=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\wangt\\.ohos\\config\\default_memLeak_t2NOPmrVJfjrD_bTNSem_CzX3_bFBgj15d6HR5TgdOs=.p12",
+          "storePassword": "0000001BA1DD3E1F0D61016D1081B3995D7491FF2D37C1CA9E30DD71F97F0A7378E1DE6640A15AF4DF6614"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "5.1.1(19)",
+        "compatibleSdkVersion": "5.1.1(19)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}
