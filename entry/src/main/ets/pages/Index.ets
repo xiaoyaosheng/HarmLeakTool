@@ -317,9 +317,9 @@ struct MemoryLeakDemo {
    * 计算组件内存大小
    */
   private calculateComponentMemorySize(type: 'leaky' | 'proper'): number {
-    // 每个泄露组件约占用10MB内存（5个2MB的数据对象）
+    // 每个泄露组件现在约占用10GB内存（20个512MB的数据对象）
     // 正确组件在销毁时会释放内存
-    return type === 'leaky' ? 10 : 10;
+    return type === 'leaky' ? 10240 : 10240; // 10240MB = 10GB
   }
 
   /**
@@ -504,10 +504,24 @@ struct MemoryLeakDemo {
   @Builder
   private buildMemoryMonitorPlaceholder() {
     Column({ space: 12 }) {
-      Text('📊 内存监控')
-        .fontSize(16)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#333333')
+      Row({ space: 8 }) {
+        Text('📊 内存监控')
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#333333')
+        
+        // OOM警告
+        if (this.memoryStats.totalAllocated > 5120) { // 超过5GB显示警告
+          Text('⚠️ OOM风险')
+            .fontSize(12)
+            .fontColor('#FF0000')
+            .fontWeight(FontWeight.Bold)
+            .backgroundColor('#FFE6E6')
+            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+            .borderRadius(4)
+        }
+      }
+      .alignItems(VerticalAlign.Center)
 
       Row({ space: 16 }) {
         // 总内存
@@ -515,10 +529,12 @@ struct MemoryLeakDemo {
           Text('总分配')
             .fontSize(12)
             .fontColor('#666666')
-          Text(`${this.memoryStats.totalAllocated.toFixed(1)} MB`)
+          Text(this.memoryStats.totalAllocated > 1024 ? 
+            `${(this.memoryStats.totalAllocated / 1024).toFixed(2)} GB` : 
+            `${this.memoryStats.totalAllocated.toFixed(1)} MB`)
             .fontSize(16)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#2196F3')
+            .fontColor(this.memoryStats.totalAllocated > 5120 ? '#FF0000' : '#2196F3')
         }
 
         // 当前使用
@@ -526,7 +542,9 @@ struct MemoryLeakDemo {
           Text('当前使用')
             .fontSize(12)
             .fontColor('#666666')
-          Text(`${this.memoryStats.currentUsage.toFixed(1)} MB`)
+          Text(this.memoryStats.currentUsage > 1024 ? 
+            `${(this.memoryStats.currentUsage / 1024).toFixed(2)} GB` : 
+            `${this.memoryStats.currentUsage.toFixed(1)} MB`)
             .fontSize(16)
             .fontWeight(FontWeight.Bold)
             .fontColor('#4CAF50')
@@ -537,7 +555,9 @@ struct MemoryLeakDemo {
           Text('泄露内存')
             .fontSize(12)
             .fontColor('#666666')
-          Text(`${this.memoryStats.leakedMemory.toFixed(1)} MB`)
+          Text(this.memoryStats.leakedMemory > 1024 ? 
+            `${(this.memoryStats.leakedMemory / 1024).toFixed(2)} GB` : 
+            `${this.memoryStats.leakedMemory.toFixed(1)} MB`)
             .fontSize(16)
             .fontWeight(FontWeight.Bold)
             .fontColor('#FF6B6B')
@@ -556,6 +576,43 @@ struct MemoryLeakDemo {
       }
       .justifyContent(FlexAlign.SpaceEvenly)
       .width('100%')
+
+      // 危险警告
+      if (this.memoryStats.totalAllocated > 2048) { // 超过2GB显示警告
+        Column({ space: 8 }) {
+          Text('⚠️ 内存使用警告')
+            .fontSize(14)
+            .fontColor('#FF0000')
+            .fontWeight(FontWeight.Bold)
+          
+          Text('当前内存使用量较高，可能导致应用崩溃或系统卡顿！')
+            .fontSize(12)
+            .fontColor('#666666')
+            .textAlign(TextAlign.Center)
+            .width('100%')
+          
+          if (this.memoryStats.totalAllocated > 10240) { // 超过10GB
+            Text('🔥 极度危险：建议立即重置所有组件！')
+              .fontSize(12)
+              .fontColor('#FF0000')
+              .fontWeight(FontWeight.Bold)
+              .textAlign(TextAlign.Center)
+              .width('100%')
+              .backgroundColor('#FFE6E6')
+              .padding(8)
+              .borderRadius(4)
+          }
+        }
+        .width('100%')
+        .padding(12)
+        .backgroundColor('#FFF3E0')
+        .borderRadius(6)
+        .border({
+          width: 1,
+          color: '#FF9800',
+          style: BorderStyle.Solid
+        })
+      }
 
       // 操作状态显示
       if (this.isOperating && this.operationMessage) {

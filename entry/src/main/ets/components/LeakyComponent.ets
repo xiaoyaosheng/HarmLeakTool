@@ -63,28 +63,29 @@ export struct LeakyComponent {
   /**
    * 加载大数据对象
    * 创建多个大数据对象来模拟内存占用
+   * ⚠️ 警告：此版本分配超大内存，可能导致OOM崩溃！
    */
   private loadLargeData(): void {
     try {
-      // 创建5个大数据对象，每个约2MB
-      for (let i = 0; i < 5; i++) {
-        const dataSize = 2 * 1024 * 1024; // 2MB
+      // 创建20个大数据对象，每个约512MB（总计约10GB+）
+      for (let i = 0; i < 20; i++) {
+        const dataSize = 512 * 1024 * 1024; // 512MB
         const metadata: LargeDataMetadata = {
           componentId: this.instanceId,
           index: i,
-          description: `这是第${i + 1}个大数据对象`,
+          description: `⚠️ 超大数据对象第${i + 1}个 (512MB)`,
           createdAt: new Date().toISOString(),
-          // 添加更多元数据来增加内存占用
-          extraData: new Array(1000).fill(0).map((value: number, idx): ExtraDataItem => ({
+          // 添加大量元数据来进一步增加内存占用
+          extraData: new Array(50000).fill(0).map((value: number, idx): ExtraDataItem => ({
             id: idx,
-            value: `数据项_${idx}`,
+            value: `超大数据项_${idx}_${new Array(100).fill('X').join('')}`, // 每个项约100字节
             timestamp: Date.now() + idx
           }))
         };
 
         const largeData: LargeDataObject = {
           id: `${this.instanceId}_data_${i}`,
-          data: new ArrayBuffer(dataSize), // 分配2MB内存
+          data: new ArrayBuffer(dataSize), // 分配512MB内存
           metadata: metadata,
           timestamp: Date.now()
         };
@@ -94,9 +95,10 @@ export struct LeakyComponent {
       }
       
       // 计算总内存使用量
-      const totalMemory = this.largeDataArray.length * 2; // 每个对象约2MB
-      this.memoryUsage = `${totalMemory} MB`;
-      this.dataLoadStatus = `已加载 ${this.largeDataArray.length} 个大数据对象`;
+      const totalMemoryMB = this.largeDataArray.length * 512; // 每个对象约512MB
+      const totalMemoryGB = (totalMemoryMB / 1024).toFixed(2);
+      this.memoryUsage = `${totalMemoryGB} GB (${totalMemoryMB} MB)`;
+      this.dataLoadStatus = `⚠️ 已加载 ${this.largeDataArray.length} 个超大数据对象 (可能导致OOM!)`;
       this.isDataLoaded = true;
       
       console.info(`[LeakyComponent] ${this.instanceId} 加载了 ${this.largeDataArray.length} 个大数据对象`);
@@ -123,24 +125,32 @@ export struct LeakyComponent {
     // 定时器2：每5秒添加更多数据
     const timer2 = setInterval(() => {
       // 持续添加更多数据，加剧内存泄露
-      if (this.largeDataArray.length < 10) {
+      if (this.largeDataArray.length < 50) { // 增加上限到50个
         const additionalMetadata: LargeDataMetadata = { 
           type: 'additional', 
           createdBy: 'timer',
           componentId: this.instanceId,
           index: this.largeDataArray.length,
-          description: '定时器添加的额外数据',
+          description: '⚠️ 定时器添加的超大额外数据 (256MB)',
           createdAt: new Date().toISOString()
         };
         const instanceId = this.instanceId;
         const additionalData: LargeDataObject = {
           id: `${instanceId}_additional_${Date.now()}`,
-          data: new ArrayBuffer(1024 * 1024), // 1MB
+          data: new ArrayBuffer(256 * 1024 * 1024), // 256MB
           metadata: additionalMetadata,
           timestamp: Date.now()
         };
         this.largeDataArray.push(additionalData);
-        console.info(`[LeakyComponent] 定时器添加了额外数据，当前数据量: ${this.largeDataArray.length}`);
+        
+        // 更新内存使用显示
+        const totalMemoryMB = this.largeDataArray.reduce((total, data) => {
+          return total + (data.data.byteLength / (1024 * 1024));
+        }, 0);
+        const totalMemoryGB = (totalMemoryMB / 1024).toFixed(2);
+        this.memoryUsage = `${totalMemoryGB} GB (${totalMemoryMB.toFixed(0)} MB)`;
+        
+        console.warn(`[LeakyComponent] ⚠️ 定时器添加了256MB额外数据，当前数据量: ${this.largeDataArray.length}，总内存: ${totalMemoryGB}GB`);
       }
     }, 5000);
     this.timerIds.push(timer2);
@@ -199,59 +209,82 @@ export struct LeakyComponent {
       Text(this.componentTitle)
         .fontSize(18)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#FF6B6B')
+        .fontColor('#FF0000') // 更醒目的红色
         .margin({ bottom: 8 })
       
-      // 警告标识
+      // 危险警告标识
       Row({ space: 8 }) {
-        Text('⚠️')
-          .fontSize(20)
-        Text('内存泄露组件')
-          .fontSize(14)
-          .fontColor('#FF6B6B')
-          .fontWeight(FontWeight.Medium)
+        Text('🔥')
+          .fontSize(24)
+        Column({ space: 2 }) {
+          Text('极度危险组件')
+            .fontSize(14)
+            .fontColor('#FF0000')
+            .fontWeight(FontWeight.Bold)
+          Text('GB级内存泄露')
+            .fontSize(12)
+            .fontColor('#FF6B6B')
+        }
       }
       .justifyContent(FlexAlign.Center)
       
       // 数据加载状态
       Text(this.dataLoadStatus)
         .fontSize(14)
-        .fontColor(this.isDataLoaded ? '#4CAF50' : '#FF9800')
+        .fontColor(this.isDataLoaded ? '#FF6B6B' : '#FF9800') // 加载完成显示红色
         .textAlign(TextAlign.Center)
+        .fontWeight(FontWeight.Medium)
       
-      // 内存使用情况
-      Row({ space: 8 }) {
-        Text('内存占用:')
-          .fontSize(12)
-          .fontColor('#666666')
-        Text(this.memoryUsage)
-          .fontSize(12)
-          .fontColor('#FF6B6B')
-          .fontWeight(FontWeight.Bold)
-      }
-      .justifyContent(FlexAlign.Center)
-      
-      // 问题说明
+      // 内存使用情况（突出显示）
       Column({ space: 8 }) {
-        Text('存在的问题:')
+        Row({ space: 8 }) {
+          Text('💥 内存占用:')
+            .fontSize(12)
+            .fontColor('#333333')
+            .fontWeight(FontWeight.Bold)
+          Text(this.memoryUsage)
+            .fontSize(14)
+            .fontColor('#FF0000')
+            .fontWeight(FontWeight.Bold)
+        }
+        .justifyContent(FlexAlign.Center)
+        
+        Text('(GB级内存分配，可能导致OOM崩溃!)')
+          .fontSize(10)
+          .fontColor('#FF6B6B')
+          .backgroundColor('#FFE6E6')
+          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+          .borderRadius(4)
+          .textAlign(TextAlign.Center)
+      }
+      
+      // 问题说明（更突出）
+      Column({ space: 8 }) {
+        Text('⚠️ 危险问题:')
           .fontSize(12)
-          .fontColor('#333333')
-          .fontWeight(FontWeight.Medium)
+          .fontColor('#FF0000')
+          .fontWeight(FontWeight.Bold)
         
         Text('• 缺少 aboutToDisappear 方法')
           .fontSize(10)
           .fontColor('#666666')
           .textAlign(TextAlign.Start)
         
-        Text('• 未清理大数据对象引用')
+        Text('• 未清理GB级大数据对象引用')
           .fontSize(10)
           .fontColor('#666666')
           .textAlign(TextAlign.Start)
         
-        Text('• 未取消定时器和订阅')
+        Text('• 未取消定时器和订阅（持续泄露）')
           .fontSize(10)
           .fontColor('#666666')
           .textAlign(TextAlign.Start)
+          
+        Text('• 定时器每5秒额外添加256MB数据')
+          .fontSize(10)
+          .fontColor('#FF6B6B')
+          .textAlign(TextAlign.Start)
+          .fontWeight(FontWeight.Medium)
       }
       .alignItems(HorizontalAlign.Start)
       .width('100%')
@@ -262,14 +295,23 @@ export struct LeakyComponent {
         .fontSize(10)
         .fontColor('#999999')
         .margin({ top: 8 })
+        
+      // 面向开发者的警告
+      Text('🚀 注意：这是用于演示内存泄露的教学组件，请勿在生产环境使用！')
+        .fontSize(9)
+        .fontColor('#666666')
+        .textAlign(TextAlign.Center)
+        .width('100%')
+        .fontStyle(FontStyle.Italic)
+        .margin({ top: 8 })
     }
     .width('100%')
     .padding(16)
-    .backgroundColor('#FFF5F5')
+    .backgroundColor('#FFF0F0') // 更深的红色背景
     .borderRadius(8)
     .border({
-      width: 2,
-      color: '#FF6B6B',
+      width: 3, // 更粗的边框
+      color: '#FF0000', // 红色边框
       style: BorderStyle.Dashed
     })
   }
